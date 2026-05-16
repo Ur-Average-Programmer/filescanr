@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic>=2.0
+pydantic-settings
+aiofiles
+websockets
+# pyodbc  # optional: database log scanning via ODBC
+# pywin32  # Windows only: Windows Event Log scanning
+pyyaml
+python-multipart

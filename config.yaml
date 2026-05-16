@@ -1,0 +1,69 @@
+# FileScanr — default configuration template
+# Copy this file and edit for your scan job; the UI generates configs dynamically.
+
+name: "My Scan Job"
+
+sources:
+  # ── File Share / Network Drive ────────────────────────────────────────────
+  - type: file_share
+    enabled: true
+    # UNC paths (\\server\share) and local paths both supported
+    path: "C:\\Logs"            # or \\fileserver\logs
+
+  # ── Plain Text System Logs ────────────────────────────────────────────────
+  - type: system_log
+    enabled: false
+    path: "/var/log"            # Linux/macOS log directory
+
+  # ── Windows Event Log ────────────────────────────────────────────────────
+  - type: windows_event
+    enabled: false
+    platform: windows           # only active on Windows
+    event_channels:
+      - Application
+      - System
+      - Security
+      # - "Microsoft-Windows-PowerShell/Operational"  # custom channels
+
+  # ── Database Log Table ────────────────────────────────────────────────────
+  - type: database
+    enabled: false
+    # ODBC connection string
+    connection_string: "DRIVER={ODBC Driver 17 for SQL Server};SERVER=myserver;DATABASE=mydb;UID=user;PWD=pass"
+    log_table: "ApplicationLogs"
+    timestamp_column: "LogTimestamp"
+    message_column: "LogMessage"
+
+filters:
+  # ISO 8601 datetimes; null means no limit
+  date_from: null               # e.g. "2024-01-01T00:00:00"
+  date_to: null                 # e.g. "2024-12-31T23:59:59"
+
+  # fnmatch glob applied to filename (not full path)
+  filename_pattern: "*.log"     # e.g. "*.txt", "app_*.log", "*"
+
+  content_search:
+    enabled: true
+
+    # List of strings to search for inside each file
+    strings:
+      - "ERROR"
+      - "CRITICAL"
+      - "Exception"
+
+    # If false, search is case-insensitive
+    case_sensitive: false
+
+    # "any" — match files containing at least one string
+    # "all" — match files containing every string
+    match_mode: "any"
+
+performance:
+  # Worker threads for parallel file reading
+  max_threads: 16
+
+  # Skip files larger than this (megabytes)
+  max_file_size_mb: 500
+
+  # Detect and skip binary files (checks first 512 bytes for null bytes)
+  skip_binary: true
