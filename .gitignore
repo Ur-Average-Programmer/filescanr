@@ -26,6 +26,11 @@ logs/*.log
 .DS_Store
 Thumbs.db
 
+# PyInstaller
+dist/
+build/
+*.spec
+
 # IDE
 .vscode/
 .idea/
