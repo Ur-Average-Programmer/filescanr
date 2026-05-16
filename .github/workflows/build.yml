@@ -1,0 +1,107 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+    tags:    ["v*"]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: Build / ${{ matrix.os-label }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner:   windows-latest
+            os-label: Windows
+            asset:    filescanr-windows.exe
+            sep:      ";"          # PyInstaller data separator on Windows
+
+          - runner:   ubuntu-latest
+            os-label: Linux
+            asset:    filescanr-linux
+            sep:      ":"
+
+          - runner:   macos-latest
+            os-label: macOS
+            asset:    filescanr-macos
+            sep:      ":"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: >
+          pyinstaller
+          --onefile
+          --name filescanr
+          --add-data "frontend${{ matrix.sep }}frontend"
+          --add-data "config.yaml${{ matrix.sep }}."
+          --hidden-import uvicorn.logging
+          --hidden-import uvicorn.loops.auto
+          --hidden-import uvicorn.lifespan.on
+          --hidden-import uvicorn.protocols.http.auto
+          --hidden-import uvicorn.protocols.http.h11_impl
+          --hidden-import uvicorn.protocols.websockets.auto
+          --hidden-import uvicorn.protocols.websockets.websockets_impl
+          --hidden-import uvicorn.protocols.websockets.wsproto_impl
+          --hidden-import uvicorn.middleware.proxy_headers
+          --hidden-import websockets.legacy.server
+          --hidden-import websockets.legacy.client
+          --collect-all starlette
+          --collect-all fastapi
+          main.py
+
+      - name: Rename artifact (Linux / macOS)
+        if: matrix.runner != 'windows-latest'
+        run: mv dist/filescanr dist/${{ matrix.asset }}
+
+      - name: Rename artifact (Windows)
+        if: matrix.runner == 'windows-latest'
+        run: Rename-Item dist\filescanr.exe ${{ matrix.asset }}
+        shell: pwsh
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
+          retention-days: 30
+
+  release:
+    name: GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/filescanr-windows.exe/filescanr-windows.exe
+            dist/filescanr-linux/filescanr-linux
+            dist/filescanr-macos/filescanr-macos
