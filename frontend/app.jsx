@@ -908,6 +908,14 @@ function App() {
     } catch {}
   }, [activeJob]);
 
+  const handleExit = useCallback(async () => {
+    if (!confirm('Shut down FileScanr and close the browser tab?')) return;
+    try {
+      await fetch('/api/v1/shutdown', { method: 'POST' });
+    } catch {}
+    window.close();
+  }, []);
+
   return (
     <>
       {/* Navbar */}
@@ -937,6 +945,9 @@ function App() {
               {backendOk === null ? 'Checking…' : backendOk ? 'Backend online' : 'Backend offline'}
             </span>
           </div>
+          <button className="btn btn-secondary btn-sm" onClick={handleExit} title="Shut down server and close tab">
+            ⏻ Exit
+          </button>
         </div>
       </nav>
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -142,6 +143,15 @@ def get_config_template():
         with open(CONFIG_YAML_PATH, encoding="utf-8") as f:
             return yaml.safe_load(f)
     return {}
+
+
+# ── Shutdown ───────────────────────────────────────────────────────────────────
+
+@router.post("/api/v1/shutdown")
+def shutdown():
+    # Delay exit slightly so this HTTP response can be delivered first
+    threading.Timer(0.5, lambda: os._exit(0)).start()
+    return {"message": "Shutting down"}
 
 
 # ── WebSocket ──────────────────────────────────────────────────────────────────
