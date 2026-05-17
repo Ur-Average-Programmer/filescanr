@@ -909,11 +909,28 @@ function App() {
   }, [activeJob]);
 
   const handleExit = useCallback(async () => {
-    if (!confirm('Shut down FileScanr and close the browser tab?')) return;
-    try {
-      await fetch('/api/v1/shutdown', { method: 'POST' });
-    } catch {}
-    window.close();
+    if (!confirm('Shut down the FileScanr server?')) return;
+    // Replace page content immediately so the user sees a clear message
+    // even if window.close() is blocked by the browser
+    document.open();
+    document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <title>FileScanr — Stopped</title>
+      <style>
+        body { margin: 0; background: #0f172a; color: #e2e8f0;
+               font-family: system-ui, sans-serif; display: flex;
+               align-items: center; justify-content: center;
+               height: 100vh; flex-direction: column; gap: 12px; }
+        h1 { font-size: 1.5rem; font-weight: 700; color: #f1f5f9; margin: 0; }
+        p  { color: #64748b; margin: 0; font-size: 0.95rem; }
+      </style></head><body>
+      <h1>FileScanr has stopped</h1>
+      <p>You can close this tab.</p>
+    </body></html>`);
+    document.close();
+    // Call shutdown — fire and forget (page is already replaced)
+    fetch('/api/v1/shutdown', { method: 'POST' }).catch(() => {});
+    // Best-effort close (works if tab was opened via window.open)
+    setTimeout(() => window.close(), 600);
   }, []);
 
   return (
