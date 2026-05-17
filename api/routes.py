@@ -20,10 +20,14 @@ _job_manager = None
 _db_store = None
 
 
-def set_dependencies(job_manager, db_store):
-    global _job_manager, _db_store
+def set_dependencies(job_manager, db_store, logs_dir: Path = None, bundle_dir: Path = None):
+    global _job_manager, _db_store, LOGS_DIR, CONFIG_YAML_PATH
     _job_manager = job_manager
     _db_store = db_store
+    if logs_dir is not None:
+        LOGS_DIR = logs_dir
+    if bundle_dir is not None:
+        CONFIG_YAML_PATH = bundle_dir / "config.yaml"
 
 
 # ── Scan Jobs ──────────────────────────────────────────────────────────────────

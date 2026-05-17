@@ -14,7 +14,7 @@ from typing import Optional
 
 from .models import ScanConfig, ScanResult
 
-LOGS_DIR = Path(__file__).parent.parent / "logs"
+LOGS_DIR = Path(__file__).parent.parent / "logs"  # default; overridden by JobManager
 
 
 @dataclass
@@ -209,11 +209,14 @@ def _run_job(job: ScanJob, db_store):
 
 
 class JobManager:
-    def __init__(self, db_store):
+    def __init__(self, db_store, logs_dir: Path = None):
         self._jobs: dict[str, ScanJob] = {}
         self._lock = threading.Lock()
         self._executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="scan-job")
         self._db = db_store
+        if logs_dir is not None:
+            global LOGS_DIR
+            LOGS_DIR = logs_dir
 
     def create_job(self, config: ScanConfig) -> ScanJob:
         job = ScanJob(name=config.name, config=config)

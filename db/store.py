@@ -6,14 +6,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-DB_PATH = Path(__file__).parent.parent / "filescanr.db"
+_DB_PATH: Path = Path(__file__).parent.parent / "filescanr.db"
 
 _local = threading.local()
 
 
 def _get_conn() -> sqlite3.Connection:
     if not hasattr(_local, "conn") or _local.conn is None:
-        conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+        conn = sqlite3.connect(str(_DB_PATH), check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA synchronous=NORMAL")
@@ -21,7 +21,11 @@ def _get_conn() -> sqlite3.Connection:
     return _local.conn
 
 
-def init_db():
+def init_db(runtime_dir: Path = None):
+    global _DB_PATH, _local
+    if runtime_dir is not None:
+        _DB_PATH = runtime_dir / "filescanr.db"
+        _local = threading.local()  # reset so _get_conn picks up the new path
     conn = _get_conn()
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS scan_jobs (
@@ -59,8 +63,6 @@ def init_db():
 
 
 def upsert_job(job) -> None:
-    from scanner.models import ScanConfig
-
     conn = _get_conn()
     config_json = None
     if job.config:
